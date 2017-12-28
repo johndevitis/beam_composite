@@ -90,9 +90,9 @@ class NFA(object):
     def open(self, combinations = False):
         """opens nfa result file"""
         nprim, nsec = ctypes.c_int(), ctypes.c_int()
-        if self.isrun and os.path.isfile(self.filename):
-            # TODO: check if file exists, handle errors
+        if (self.isrun or os.path.isfile(self.filename)) and not self.isopen:
             chkErr(St7OpenResultFile(self.uid, self.filename.encode(),self.spectralname.encode(), False, nprim, nsec))
+            self.isopen = True
         else:
             print('NFA solver not run yet or file not found.')
         return nprim, nsec
@@ -102,6 +102,7 @@ class NFA(object):
         if self.isopen:
             # close result file
             chkErr(St7CloseResultFile(self.uid))
+            self.isopen = False
         else:
             print('NFA result file not open.')
 
@@ -124,7 +125,7 @@ class NFA(object):
             chkErr(St7EnableNFANonStructuralMassCase(self.uid, m))
         # run solver
         chkErr(St7RunSolver(self.uid, stNaturalFrequencySolver, smBackgroundRun, btTrue))
-        if disp: print('NFA solver for completed successfully (uid: {})'.format(self.uid))
+        if disp: print('NFA solver completed successfully (uid: {})'.format(self.uid))
         self.isrun = True
 
     def getResults(self):
@@ -137,32 +138,33 @@ class NFA(object):
         self.close()
         return freq, U
 
-    def getModeShapes(self, mode=1):
-        # open result file
-        resName = os.path.splitext(self._fullname)[0] + '.nfa'.encode()
-        nPrim, nSec = ctypes.c_int(), ctypes.c_int()
-        chkErr(St7OpenResultFile(self.uID,resName,''.encode(),False,nPrim,nSec))
+    def getModeShapes(self, nodes=(1,)):
+        """
+        returns [nnodes, 6dof , nmodes] array
+        """
+        self.open()
         nd = (ctypes.c_double*6)()
-        tots = self.totals(disp=False)
-        nodes = tots['Nodes']
-        u = []
-        for node in range(1,nodes+1):
-            chkErr(St7GetNodeResult(self.uID,rtNodeDisp,node,mode,nd))
-            u.append(nd[:])
-        # close result file
-        chkErr(St7CloseResultFile(self.uID))
-        return u
+        U = np.empty((len(nodes),6,self.nmodes))
+        for mode in np.arange(self.nmodes):
+            node_count = 0
+            for node in nodes:
+                chkErr(St7GetNodeResult(self.uid,rtNodeDisp,node,mode+1,nd))
+                U[node_count,:,mode] = nd
+                node_count += 1
+        self.close()
+        return U
 
-    def getFrequencies(self):
+    def getFrequencies(self, disp=True):
         # get natural frequencies
-        freq = ctypes.c_double)()
+        self.open()
+        frq = ctypes.c_double()
         freq = []
         for mode in range(1,self.nmodes+1):
-            chkErr(St7GetFrequency(self.uid, mode,frq))
+            chkErr(St7GetFrequency(self.uid,mode,frq))
             freq.append(frq.value)
-            print('Frequencies: {}'.format(frq))
+            if disp: print('Mode {}    Frequency: {} Hz'.format(mode,frq.value))
         # close result file
-        chkErr(St7CloseResultFile(self.uid))
+        self.close()
         return freq
 
 
@@ -170,7 +172,7 @@ class NFA(object):
 class Node(object):
     """Strand7 Node Class"""
 
-    def get_coords(self, uid=1, nodes=1, disp=True):
+    def get_coords(self, uid=1, nodes=(1,), disp=True):
         """get nodal coordinates in model"""
 
         # initialize list (to append to) and st7 double input
@@ -179,7 +181,7 @@ class Node(object):
 
         # loop with 1 index (instead of  typical 0)
         # also note - need to slice the coord array to produce a copy
-        for node in range(1, nodes+1):
+        for node in nodes:
             chkErr(St7GetNodeXYZ(uid, node, coord))
             coords.append(coord[:])
             if disp:  # print output if desired

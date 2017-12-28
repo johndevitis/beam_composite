@@ -11,9 +11,9 @@ def set_beam_material_property(uid, propnums, value, propname='ipBeamModulus', d
     for prop in propnums:
         Double = ctypes.c_double*9
         Doubles = Double()
-        chkErr(St7API.St7GetBeamMaterialData(uid,prop,Doubles))
-        Doubles[St7API[propname]] = value
-        chkErr(St7API.St7SetBeamMaterialData(uid,prop,Doubles))
+        chkErr(St7GetBeamMaterialData(uid,prop,Doubles))
+        Doubles[propname] = value
+        chkErr(St7SetBeamMaterialData(uid,prop,Doubles))
     [print('Beam Propnum: {}\tAssigned {} as {}'.format(x,propname,value)) for x in propnums if disp==True]
 
 
@@ -22,9 +22,9 @@ def set_plate_iso_material_property(uid, props, value, propname='ipPlateIsoModul
     for prop in props:
         Double = ctypes.c_double*8
         Doubles = Double()
-        chkErr(St7API.St7GetPlateIsotropicMaterial(uid,prop,Doubles))
-        Doubles[St7API[propname]] = value
-        chkErr(St7API.St7SetPlateIsotropicMaterial(uid,propnum,Doubles))
+        chkErr(St7GetPlateIsotropicMaterial(uid,prop,Doubles))
+        Doubles[propname] = value
+        chkErr(St7SetPlateIsotropicMaterial(uid,propnum,Doubles))
     [print('Plate Propnum: {}\tAssigned {} as {}'.format(x, propname, value)) for x in propnums if disp==True]
 
 
@@ -33,10 +33,10 @@ def set_plate_ortho_material_property_e(uid, propnums, value, disp=False):
     for prop in propnums:
         Double = ctypes.c_double*18
         Doubles = Double()
-        st7.chkErr(St7API.St7GetPlateOrthotropicMaterial(uid,prop,Doubles))
-        Doubles[St7API.ipPlateOrthoModulus1] = value[0]
-        Doubles[St7API.ipPlateOrthoModulus2] = value[1]
-        st7.chkErr(St7API.St7SetPlateOrthotropicMaterial(uid,prop,Doubles))
+        chkErr(St7GetPlateOrthotropicMaterial(uid,prop,Doubles))
+        Doubles[ipPlateOrthoModulus1] = value[0]
+        Doubles[ipPlateOrthoModulus2] = value[1]
+        chkErr(St7SetPlateOrthotropicMaterial(uid,prop,Doubles))
 
 
 def set_node_stiffness(uid,nodes,value):
@@ -47,7 +47,7 @@ def set_node_restraint(uid,nodeids,value):
     pass
 
 
-def gen_nfa_filename(base_name, uid,result_ext,log_ext):
+def gen_result_name(base_name, uid,result_ext,log_ext):
     """ adds *_<uid>* to model file name for nfa results and log files"""
     result_file = os.path.splitext(base_name)[0] + '_{}'.format(uid) + result_ext.upper()
     log_file = os.path.splitext(base_name)[0] + '_{}'.format(uid) + log_ext.upper()
@@ -56,13 +56,17 @@ def gen_nfa_filename(base_name, uid,result_ext,log_ext):
 
 def main(uid):
 
+    start()
+
     # open st7 model from st7py Model class instance
     model = Model(filename = ST7_FILE, scratch = ST7_SCRATCH, uid = uid)
     model.open()
 
+    tots = model.totals()
+
 
     # run NFA solver using model filename and uid to name files
-    nfa_file, nfa_log = gen_nfa_filename(model.filename, uid,'.NFA','.NFL')
+    nfa_file, nfa_log = gen_result_name(model.filename, uid,'.NFA','.NFL')
     nfa = NFA(uid = uid,
               filename = nfa_file,
               logname = nfa_log,
@@ -71,8 +75,15 @@ def main(uid):
               nmodes = NFA_NMODES)
 
     # run  nfa solver
-    nfa.run()
+    nfa.run(disp=True)
 
+    freqs = nfa.getFrequencies()
+    shapes = nfa.getModeShapes(nodes=np.arange(1,1334))
 
     # close file
     model.close()
+
+
+    stop()
+
+    return freqs, shapes
