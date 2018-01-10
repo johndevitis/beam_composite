@@ -8,6 +8,8 @@ from St7API import *
 from settings import *
 
 
+
+
 def get_beam_material_property(uid,propnum):
     """
     gets beam material property data as array of doubles
@@ -137,49 +139,127 @@ def gen_start_values(n=1,fname = 'cal_start_values.csv'):
     np.savetxt(fname,values)
 
 
-def load_from_xls(fname):
+def load_xls(fname):
     return pd.read_excel(fname, sheet_name=None)
 
 
-def set_barrier_modulus():
-    pass
+
+def set_barrier_modulus(model,meta,value):
+    print('Setting {}...'.format(value))
 
 
-def set_deck_modulus():
-    pass
+def set_deck_modulus(model,meta,value):
+    print('Setting {}...'.format(value))
 
 
-def set_deck_density():
-    pass
+def set_deck_density(model,meta,value):
+    print('Setting {}...'.format(value))
 
 
-def set_deck_thickness():
-    pass
+def set_deck_thickness(model,meta,value):
+    print('Setting {}...'.format(value))
 
 
-def set_deck_height():
-    pass
+def set_deck_height(model,meta,value):
+    print('Setting {}...'.format(value))
 
 
-def set_kx_ends():
-    a = np.array([get_node_stiffness(1,node,1) for node in np.arange(1,11)])
-    
-
-def set_kr_mid():
-    pass
+def set_kx_ends(model,meta,value):
+    print('Setting {}...'.format(value))
+    #a = np.array([get_node_stiffness(1,node,1) for node in np.arange(1,11)])
 
 
-def set_steel_modulus():
-    pass
+def set_kx_mid(model,meta,value):
+    print('Setting {}...'.format(value))
 
 
-def set_diaphragm_modulus():
-    pass
+def set_steel_modulus(model,meta,value):
+    print('Setting {}...'.format(value))
+
+
+def set_diaphragm_modulus(model,meta,value):
+    print('Setting {}...'.format(value))
 
 
 
-def assign_parameters():
-    pass
+def scale_para(para,value):
+    """
+    returns scaled parameter value based on scale type (log/linear) and base
+    """
+    if para['scale'] == 'log':
+        x = para['base']*10**value
+    elif para['scale'] == 'linear':
+        x = para['base']*value
+    return x
+
+
+def assignment_functions():
+    """
+    returns dictionary of setting functions, meta xls dataframe, and filtered
+    paras to include
+    """
+    # declare dict of set functions for each parameter in 'parameters' sheet
+    # all functions are passed an instance of the model class, the xls meta dataframe
+    # and a new parameter value to assign.
+    f = {'barrier_modulus': set_barrier_modulus,
+    'deck_modulus': set_deck_modulus,
+    'deck_density': set_deck_density,
+    'deck_thickness': set_deck_thickness,
+    'deck_height': set_deck_height,
+    'kx_ends': set_kx_ends,
+    'kx_mid': set_kx_mid,
+    'steel_modulus': set_steel_modulus,
+    'diaphragm_modulus': set_diaphragm_modulus}
+
+    # read meta xls file
+    df = pd.read_excel(XLS_FILE, sheet_name=None)
+
+    # extract desired parameter settings from 'parameters' tab
+    paras = df['parameters'][ df['parameters'].include == 1 ]
+
+    return f, df, paras
+
+
+
+def get_residuals():
+    # assign parameters
+
+    # run nfa
+
+    # pair modes
+
+    # get frequency residues -> experimental vs analytical
+
+
+
+def sensitivity():
+
+    f, df, paras = assignment_functions()
+
+    # loop included parameters
+    for idx, para in paras.iterrows():
+
+        # get array of alphas based on lower and upper bounds
+        alphas = np.linspace(para['x_lb'], para['x_ub'], PARALLEL_NUM_WORKERS)
+        # scale alpha values (scale_para broadcasts here, i.e. works for scalar and array of alphas)
+        values = scale_para(para, alphas)
+
+        for value in values:
+            # assign value to apriori model
+
+            # run NFA
+
+            # get results
+
+            # store results
+
+
+
+
+
+
+
+
 
 
 def run_nfa(uid):
@@ -208,7 +288,6 @@ def run_nfa(uid):
     freqs = nfa.getFrequencies()
     shapes = nfa.getModeShapes(nodes=np.arange(1,1334))
 
-
     # close model file and unload St7API
     model.close()
     stop()
@@ -216,15 +295,15 @@ def run_nfa(uid):
     return freqs, shapes
 
 
+
+
 def calibrate():
     pass
-
-
 
 
 
 def main(uid):
 
 
-    # load xls file w/ processing logic
+    # load xls file w/ meta data
     paras = pd.read_excel(XLS_FILE, sheet_name='parameters')
