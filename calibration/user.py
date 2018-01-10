@@ -8,6 +8,15 @@ from St7API import *
 from settings import *
 
 
+def get_beam_material_property(uid,propnum):
+    """
+    gets beam material property data as array of doubles
+    """
+    data = (ctypes.c_double*9)()
+    chkErr(St7GetBeamMaterialData(uid,propnum,data))
+    return data
+
+
 def set_beam_material_property(uid, propnums, value, propname='ipBeamModulus', disp=False):
     """
     sets a single modulus to single or multiple st7 property numbers.
@@ -54,30 +63,60 @@ def get_node_stiffness(uid=1,node=1,fcase=1):
     trans = (ctypes.c_double*3)()
     rot = (ctypes.c_double*3)()
     ucs = ctypes.c_long(1)
-    chkErr(St7GetNodeKTranslation3F(uid, ctypes.c_long(node), ctypes.c_long(fcase), ucs, trans))
-    chkErr(St7GetNodeKRotation3F(uid, ctypes.c_long(node), ctypes.c_long(fcase), ucs, rot))
-    return trans, rot, ucs
+    # don't wrap in chkErr - throws error code 10 if no restraint originally assigned (so stupid)
+    St7GetNodeKTranslation3F(uid, node, fcase, ucs, trans)
+    St7GetNodeKRotation3F(uid, node, fcase, ucs, rot)
+    return np.hstack((trans, rot))
 
 
-def set_node_stiffness(uid=1,node=1,fcase=1,value=1):
-    trans, rot, ucs = get_node_stiffness(uid,node,fcase)
-    # modeify trans and vert stiffnesses...
-    # apply to model
-    chkErr(St7SetNodeKTranslation3F(uid, ctypes.c_long(node), ctypes.c_long(fcase), ucs, trans))
-    chkErr(St7SetNodeKRotation3F(uid, ctypes.c_long(node), ctypes.c_long(fcase), ucs, rot))
+def set_node_stiffness(uid=1,node=1,fcase=1,value=[0,0,0,0,0,0],disp=False):
+    # get original node stiffness (for correct data type). do this directly instead of calling get_node_stiffness function bc it returns as np.hstacked
+    kt = (ctypes.c_double*3)()
+    kr = (ctypes.c_double*3)()
+    ucs = ctypes.c_long(1)
+    St7GetNodeKTranslation3F(uid, node, fcase, ucs, kt)
+    St7GetNodeKRotation3F(uid, node, fcase, ucs, kr)
+    if disp: print('Model-ID {} : Node {} : Original Stiffness {}'.format(uid,node,np.hstack((kt,kr))))
+    k = get_node_stiffness(uid,node,fcase)
+    kt[:] = value[:3]
+    kr[:] = value[3:]
+    chkErr(St7SetNodeKTranslation3F(uid, node, fcase, ucs, kt))
+    chkErr(St7SetNodeKRotation3F(uid, node, fcase, ucs, kr))
+    if disp: print('Model-ID {} : Node {} : Updated Stiffness {}'.format(uid,node,np.hstack((kt,kr))))
 
 
 def get_node_restraint(uid=1,node=1,fcase=1):
-    double = ctypes.c_double*6
-    doubles = double()
-    ucs = ctypes.c_long(1)
-    status = 
-    chkErr(St7GetNodeRestraint6(uid, ctypes.c_long(node), ctypes.c_long(fcase), ctypes.c_long(ucs), ctypes.c_long(1), doubles))
+    restraint = (ctypes.c_long*6)()
+    displacement = (ctypes.c_double*6)()
+    # don't use chkErr wrapper to avoid throwing 'missing data' error 10
+    St7GetNodeRestraint6(uid,node, fcase, ctypes.c_long(1), restraint, displacement)
+    return restraint
 
 
-def set_node_restraint(uid=1,node=1,fcase=1,value=0):
+def set_node_restraint(uid=1,node=1,fcase=1, value=[1,1,1,0,0,0]):
+    # get current restraint and displacement on node for proper c data type
+    restraint = get_node_restraint(uid,node,fcase)
+    displacement = get_node_initial_displacement(uid, node, fcase)
+    # replace values w/ those given
+    restraint[:] = value
+    chkErr(St7SetNodeRestraint6(uid, node, fcase, ctypes.c_long(1), restraint, displacement))
 
-    chkErr(St7SetNodeRestraint6(uid, ctypes.c_long(node), ctypes.c_long(fcase), ctypes.c_long(ucs), ctypes.c_long(1), doubles))
+
+def get_node_initial_displacement(uid=1,node=1,fcase=1):
+    restraint = (ctypes.c_long*6)()
+    displacement = (ctypes.c_double*6)()
+    # don't use chkErr wrapper to avoid throwing 'missing data' error 10
+    St7GetNodeRestraint6(uid,node, fcase, ctypes.c_long(1), restraint, displacement)
+    return displacement
+
+
+def set_node_initial_displacement(uid=1,node=1,fcase=1, value=[1,1,1,0,0,0]):
+    # get current restraint and displacement on node for proper c data type
+    restraint = get_node_restraint(uid,node,fcase)
+    displacement = get_node_initial_displacement(uid, node, fcase)
+    # replace values w/ those given
+    displacement[:] = value
+    chkErr(St7SetNodeRestraint6(uid, node, fcase, ctypes.c_long(1), restraint, displacement))
 
 
 def gen_result_name(base_name, uid,result_ext,log_ext):
@@ -96,15 +135,6 @@ def gen_start_values(n=1,fname = 'cal_start_values.csv'):
     """
     values = pydoe.lhs(n)
     np.savetxt(fname,values)
-
-
-def gen_start_values_xls(n=1,fname = 'analysis.xls'):
-    """
-    generates n latin hypercube experiments and saves them to disk.
-    this creates a dependency on pyDOE library (bsd license)
-    """
-    values = pydoe.lhs(n)
-    pd.DataFrame(data=values).to_excel(fname, sheet_name='starting_values')
 
 
 def load_from_xls(fname):
@@ -132,14 +162,8 @@ def set_deck_height():
 
 
 def set_kx_ends():
-    for node in nodes:
-        Double = ctypes.c_double*3
-        Doubles = Double()
-        ChkErr(St7API.St7GetNodeKTranslation3F(uID,ctypes.c_long(node),ctypes.c_long(1),ctypes.c_long(1),Doubles))
-        Doubles[1-1]=BC1X_k
-        Doubles[3-1]=BC1Z_k
-        ChkErr(St7API.St7SetNodeKTranslation3F(uID,ctypes.c_long(node),ctypes.c_long(1),ctypes.c_long(1),Doubles))
-
+    a = np.array([get_node_stiffness(1,node,1) for node in np.arange(1,11)])
+    
 
 def set_kr_mid():
     pass
@@ -158,7 +182,7 @@ def assign_parameters():
     pass
 
 
-def run_nfa():
+def run_nfa(uid):
     # load St7API
     start()
 
