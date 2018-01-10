@@ -1,13 +1,18 @@
+import os
+import ctypes
+import numpy as np
+import pandas as pd
+import pyDOE as pydoe
 from st7py import *
 from St7API import *
 from settings import *
-import ctypes
-import os
-
 
 
 def set_beam_material_property(uid, propnums, value, propname='ipBeamModulus', disp=False):
-    """sets a single modulus to single or multiple st7 property numbers. defaults to setting beam elastic modulus"""
+    """
+    sets a single modulus to single or multiple st7 property numbers.
+    defaults to setting beam elastic modulus, ipBeamModulus
+    """
     for prop in propnums:
         Double = ctypes.c_double*9
         Doubles = Double()
@@ -18,18 +23,24 @@ def set_beam_material_property(uid, propnums, value, propname='ipBeamModulus', d
 
 
 def set_plate_iso_material_property(uid, props, value, propname='ipPlateIsoModulus',disp=False):
-    """sets desired material data to isotropic plates. defaults to modulus assignment"""
+    """
+    sets desired material data to isotropic plates.
+    defaults to ipPlateIsoModulus assignment
+    """
     for prop in props:
         Double = ctypes.c_double*8
         Doubles = Double()
         chkErr(St7GetPlateIsotropicMaterial(uid,prop,Doubles))
         Doubles[propname] = value
-        chkErr(St7SetPlateIsotropicMaterial(uid,propnum,Doubles))
+        chkErr(St7SetPlateIsotropicMaterial(uid,prop,Doubles))
     [print('Plate Propnum: {}\tAssigned {} as {}'.format(x, propname, value)) for x in propnums if disp==True]
 
 
 def set_plate_ortho_material_property_e(uid, propnums, value, disp=False):
-    """ sets a value[0] and value[1] to ortho plate modulus 1 and 2 respectively for each prop in propnums"""
+    """
+    sets a value[0] and value[1] to ortho plate modulus 1 and 2 respectively for
+    each prop in propnums
+    """
     for prop in propnums:
         Double = ctypes.c_double*18
         Doubles = Double()
@@ -39,31 +50,124 @@ def set_plate_ortho_material_property_e(uid, propnums, value, disp=False):
         chkErr(St7SetPlateOrthotropicMaterial(uid,prop,Doubles))
 
 
-def set_node_stiffness(uid,nodes,value):
-    pass
+def get_node_stiffness(uid=1,node=1,fcase=1):
+    trans = (ctypes.c_double*3)()
+    rot = (ctypes.c_double*3)()
+    ucs = ctypes.c_long(1)
+    chkErr(St7GetNodeKTranslation3F(uid, ctypes.c_long(node), ctypes.c_long(fcase), ucs, trans))
+    chkErr(St7GetNodeKRotation3F(uid, ctypes.c_long(node), ctypes.c_long(fcase), ucs, rot))
+    return trans, rot, ucs
 
 
-def set_node_restraint(uid,nodeids,value):
-    pass
+def set_node_stiffness(uid=1,node=1,fcase=1,value=1):
+    trans, rot, ucs = get_node_stiffness(uid,node,fcase)
+    # modeify trans and vert stiffnesses...
+    # apply to model
+    chkErr(St7SetNodeKTranslation3F(uid, ctypes.c_long(node), ctypes.c_long(fcase), ucs, trans))
+    chkErr(St7SetNodeKRotation3F(uid, ctypes.c_long(node), ctypes.c_long(fcase), ucs, rot))
+
+
+def get_node_restraint(uid=1,node=1,fcase=1):
+    double = ctypes.c_double*6
+    doubles = double()
+    ucs = ctypes.c_long(1)
+    status = 
+    chkErr(St7GetNodeRestraint6(uid, ctypes.c_long(node), ctypes.c_long(fcase), ctypes.c_long(ucs), ctypes.c_long(1), doubles))
+
+
+def set_node_restraint(uid=1,node=1,fcase=1,value=0):
+
+    chkErr(St7SetNodeRestraint6(uid, ctypes.c_long(node), ctypes.c_long(fcase), ctypes.c_long(ucs), ctypes.c_long(1), doubles))
 
 
 def gen_result_name(base_name, uid,result_ext,log_ext):
-    """ adds *_<uid>* to model file name for nfa results and log files"""
+    """
+    adds *_<uid>* to model file name for nfa results and log files
+    """
     result_file = os.path.splitext(base_name)[0] + '_{}'.format(uid) + result_ext.upper()
     log_file = os.path.splitext(base_name)[0] + '_{}'.format(uid) + log_ext.upper()
     return result_file, log_file
 
 
-def main(uid):
+def gen_start_values(n=1,fname = 'cal_start_values.csv'):
+    """
+    generates n latin hypercube experiments and saves them to disk.
+    this creates a dependency on pyDOE library (bsd license)
+    """
+    values = pydoe.lhs(n)
+    np.savetxt(fname,values)
 
+
+def gen_start_values_xls(n=1,fname = 'analysis.xls'):
+    """
+    generates n latin hypercube experiments and saves them to disk.
+    this creates a dependency on pyDOE library (bsd license)
+    """
+    values = pydoe.lhs(n)
+    pd.DataFrame(data=values).to_excel(fname, sheet_name='starting_values')
+
+
+def load_from_xls(fname):
+    return pd.read_excel(fname, sheet_name=None)
+
+
+def set_barrier_modulus():
+    pass
+
+
+def set_deck_modulus():
+    pass
+
+
+def set_deck_density():
+    pass
+
+
+def set_deck_thickness():
+    pass
+
+
+def set_deck_height():
+    pass
+
+
+def set_kx_ends():
+    for node in nodes:
+        Double = ctypes.c_double*3
+        Doubles = Double()
+        ChkErr(St7API.St7GetNodeKTranslation3F(uID,ctypes.c_long(node),ctypes.c_long(1),ctypes.c_long(1),Doubles))
+        Doubles[1-1]=BC1X_k
+        Doubles[3-1]=BC1Z_k
+        ChkErr(St7API.St7SetNodeKTranslation3F(uID,ctypes.c_long(node),ctypes.c_long(1),ctypes.c_long(1),Doubles))
+
+
+def set_kr_mid():
+    pass
+
+
+def set_steel_modulus():
+    pass
+
+
+def set_diaphragm_modulus():
+    pass
+
+
+
+def assign_parameters():
+    pass
+
+
+def run_nfa():
+    # load St7API
     start()
 
     # open st7 model from st7py Model class instance
     model = Model(filename = ST7_FILE, scratch = ST7_SCRATCH, uid = uid)
     model.open()
 
+    # get total number of elements
     tots = model.totals()
-
 
     # run NFA solver using model filename and uid to name files
     nfa_file, nfa_log = gen_result_name(model.filename, uid,'.NFA','.NFL')
@@ -80,10 +184,23 @@ def main(uid):
     freqs = nfa.getFrequencies()
     shapes = nfa.getModeShapes(nodes=np.arange(1,1334))
 
-    # close file
+
+    # close model file and unload St7API
     model.close()
-
-
     stop()
 
     return freqs, shapes
+
+
+def calibrate():
+    pass
+
+
+
+
+
+def main(uid):
+
+
+    # load xls file w/ processing logic
+    paras = pd.read_excel(XLS_FILE, sheet_name='parameters')

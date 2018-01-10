@@ -7,6 +7,7 @@ import time
 
 
 def single_analysis(uid):
+
     print('Worker {} started...\n'.format(uid))
 
     # do nothing if in debug mode, else...
@@ -18,6 +19,7 @@ def single_analysis(uid):
 
 
 if __name__ == '__main__':
+
     # define __spec__ to be able to run the multiprocessing module in ipython shell
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
 

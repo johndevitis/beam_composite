@@ -129,6 +129,9 @@ class NFA(object):
         self.isrun = True
 
     def getResults(self):
+        """
+        returns the results frequencies and mode shapes.
+        """
         # TODO: add option to delete result file after read. will also need to have a check when opening for file ot exist
         # run solver if not done yet
         if not self.isrun: self.run()
@@ -140,7 +143,7 @@ class NFA(object):
 
     def getModeShapes(self, nodes=(1,)):
         """
-        returns [nnodes, 6dof , nmodes] array
+        returns numpy array of size [nnodes, 6dof , nmodes]
         """
         self.open()
         nd = (ctypes.c_double*6)()
@@ -165,7 +168,7 @@ class NFA(object):
             if disp: print('Mode {}    Frequency: {} Hz'.format(mode,frq.value))
         # close result file
         self.close()
-        return freq
+        return np.array(freq)
 
 
 

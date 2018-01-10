@@ -5,6 +5,8 @@ NFA_NMODES = 4
 NFA_NSM = (1,) # for now non structural mass cases must be iterable (e.g. not an int)
 NFA_FCASE = 1
 
+XLS_FILE = 'analysis1.xls'
+
 CAL_N_TRIALS = 4
 CAL_PARALLEL_POOL = False
 
