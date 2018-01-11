@@ -2,49 +2,61 @@ import os
 import ctypes
 import numpy as np
 import pandas as pd
-import pyDOE as pydoe
 from st7py import *
-from St7API import *
 from settings import *
 
 
 
-def set_barrier_modulus(model,meta,value):
+def set_barrier_modulus(uid,meta,value):
     print('Setting {}...'.format(value))
 
 
-def set_deck_modulus(model,meta,value):
+def set_deck_modulus(uid,meta,value):
     print('Setting {}...'.format(value))
 
 
-def set_deck_density(model,meta,value):
+def set_deck_density(uid,meta,value):
     print('Setting {}...'.format(value))
 
 
-def set_deck_thickness(model,meta,value):
+def set_deck_thickness(uid,meta,value):
     print('Setting {}...'.format(value))
 
 
-def set_deck_height(model,meta,value):
+def set_deck_height(uid,meta,value):
     print('Setting {}...'.format(value))
 
 
-def set_kx_ends(model,meta,value):
+def set_kx_ends(uid,meta,value):
     print('Setting {}...'.format(value))
     #a = np.array([get_node_stiffness(1,node,1) for node in np.arange(1,11)])
 
 
-def set_kx_mid(model,meta,value):
+def set_kx_mid(uid,meta,value):
     print('Setting {}...'.format(value))
 
 
-def set_steel_modulus(model,meta,value):
+def set_steel_modulus(uid,meta,value):
     print('Setting {}...'.format(value))
 
 
-def set_diaphragm_modulus(model,meta,value):
+def set_diaphragm_modulus(uid,meta,value):
     print('Setting {}...'.format(value))
 
+
+setters = {'barrier_modulus': set_barrier_modulus,
+           'deck_modulus': set_deck_modulus,
+           'deck_density': set_deck_density,
+           'deck_thickness': set_deck_thickness,
+           'deck_height': set_deck_height,
+           'kx_ends': set_kx_ends,
+           'kx_mid': set_kx_mid,
+           'steel_modulus': set_steel_modulus,
+           'diaphragm_modulus': set_diaphragm_modulus}
+
+
+def assign(model, meta, values):
+    pass
 
 
 
@@ -75,16 +87,6 @@ def assignment_functions():
     return f, df, paras
 
 
-def get_residuals():
-
-    # assign parameters
-
-    # run nfa
-
-    # pair modes
-
-    # get frequency residues -> experimental vs analytical
-
 
 
 def sensitivity():
@@ -99,7 +101,7 @@ def sensitivity():
         # scale alpha values (scale_para broadcasts here, i.e. works for scalar and array of alphas)
         values = scale_para(para, alphas)
 
-        for value in values:
+        #for value in values:
             # assign value to apriori model
 
             # run NFA
