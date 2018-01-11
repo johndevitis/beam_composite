@@ -1,20 +1,14 @@
-#import user
-from settings import *
-import st7py as st7
-import numpy as np
 from multiprocessing import Pool, TimeoutError
 import time
 import sys
+import numpy as np
+from settings import *
 
-def single_analysis(uid):
-    print('Worker {} started...\n'.format(uid))
-    # do nothing if in debug mode, else...
-    if not MAIN_DEBUG_MODE:
-        # run main user function if not in debug mode
-        #results = user.main(uid)
-        results = sys.argv[1](uid)
-        print('Worker {} finished...\n'.format(uid))
-        return results
+def main(uid):
+    print('Worker {} started at {}...'.format(uid, time.time()))
+    time.sleep(1)
+    print('Worker {} finished at {}'.format(uid, time.time()))
+    return results
 
 
 if __name__ == '__main__':
@@ -33,10 +27,10 @@ if __name__ == '__main__':
         with Pool(n) as pool:
             uids = np.arange(1,n+1)
             t0 = time.time()
-            results = pool.map(single_analysis,uids)
+            results = pool.map(main,uids)
     else:
         # single analysis
-        results = single_analysis(1)
+        results = main(1)
 
     # print total run time
     print('Main function finished. Total elapsed time: {}s\n'.format(time.time()-t0))
