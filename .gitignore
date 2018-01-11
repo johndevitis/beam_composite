@@ -10,7 +10,7 @@ __pycache__
 .idea/
 
 # stupid windows Thumbs bs
-*.db
+#*.db
 
 # zip files
 *.zip
