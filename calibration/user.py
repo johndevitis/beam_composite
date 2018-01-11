@@ -6,41 +6,44 @@ from st7py import *
 from settings import *
 
 
+# load meta data from excel file as a pandas dataframe
+meta = pd.read_excel(XLS_FILE, sheet_name=None)
 
-def set_barrier_modulus(uid,meta,value):
+
+def set_barrier_modulus(uid,value):
     print('Setting {}...'.format(value))
 
 
-def set_deck_modulus(uid,meta,value):
+def set_deck_modulus(uid,value):
     print('Setting {}...'.format(value))
 
 
-def set_deck_density(uid,meta,value):
+def set_deck_density(uid,value):
     print('Setting {}...'.format(value))
 
 
-def set_deck_thickness(uid,meta,value):
+def set_deck_thickness(uid,value):
+    print('Settings {}...'.format(value))
+
+
+def set_deck_height(uid,value):
     print('Setting {}...'.format(value))
 
 
-def set_deck_height(uid,meta,value):
-    print('Setting {}...'.format(value))
-
-
-def set_kx_ends(uid,meta,value):
-    print('Setting {}...'.format(value))
+def set_kx_ends(uid,value):
+    print('uid: {}    value:{}'.format(uid,value))
     #a = np.array([get_node_stiffness(1,node,1) for node in np.arange(1,11)])
 
 
-def set_kx_mid(uid,meta,value):
+def set_kx_mid(uid,value):
     print('Setting {}...'.format(value))
 
 
-def set_steel_modulus(uid,meta,value):
+def set_steel_modulus(uid,value):
     print('Setting {}...'.format(value))
 
 
-def set_diaphragm_modulus(uid,meta,value):
+def set_diaphragm_modulus(uid,value):
     print('Setting {}...'.format(value))
 
 
@@ -90,25 +93,13 @@ def assignment_functions():
 
 
 def sensitivity():
-
     f, df, paras = assignment_functions()
-
     # loop included parameters
     for idx, para in paras.iterrows():
-
         # get array of alphas based on lower and upper bounds
         alphas = np.linspace(para['x_lb'], para['x_ub'], PARALLEL_NUM_WORKERS)
         # scale alpha values (scale_para broadcasts here, i.e. works for scalar and array of alphas)
         values = scale_para(para, alphas)
-
-        #for value in values:
-            # assign value to apriori model
-
-            # run NFA
-
-            # get results
-
-            # store results
 
 
 

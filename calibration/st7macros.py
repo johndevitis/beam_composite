@@ -127,7 +127,7 @@ def gen_result_name(base_name, uid,result_ext,log_ext):
 
 def scale_para(para,value):
     """
-    returns scaled parameter value based on scale type (log/linear) and base
+    returns scaled parameter based on value, scale type (log/linear), and base
     """
     if para['scale'] == 'log':
         x = para['base']*10**value
