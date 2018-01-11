@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from st7py import *
 from settings import *
+import st7macros
 
 
 # load meta data from excel file as a pandas dataframe
@@ -31,12 +32,21 @@ def set_deck_height(uid,value):
 
 
 def set_kx_ends(uid,value):
-    print('uid: {}    value:{}'.format(uid,value))
-    #a = np.array([get_node_stiffness(1,node,1) for node in np.arange(1,11)])
+    # get near and far node indices from node_stiffness sheet
+    df = meta['node_stiffness']
+    # filter nodal indices based on 'near' and 'far' node names
+    df = df[ (df['name']=='near') | (df['name']=='far') ]
+    # apply longitudinal spring value to each node
+    for _, row in df.iterrows():
+        st7macros.set_node_stiffness(uid, node=row['id'], fcase=row['fcase'],
+            value=[value,0,0,0,0,0])
 
 
 def set_kx_mid(uid,value):
-    print('Setting {}...'.format(value))
+    # get near and far node indices from node_stiffness sheet
+    df = meta['node_stiffness']
+    # filter nodal indices based on 'near' and 'far' node names
+    df = df[ df['name']=='mid' ]
 
 
 def set_steel_modulus(uid,value):
@@ -56,39 +66,6 @@ setters = {'barrier_modulus': set_barrier_modulus,
            'kx_mid': set_kx_mid,
            'steel_modulus': set_steel_modulus,
            'diaphragm_modulus': set_diaphragm_modulus}
-
-
-def assign(model, meta, values):
-    pass
-
-
-
-def assignment_functions():
-    """
-    returns dictionary of setting functions, meta xls dataframe, and filtered
-    paras to include
-    """
-    # declare dict of set functions for each parameter in 'parameters' sheet
-    # all functions are passed an instance of the model class, the xls meta dataframe
-    # and a new parameter value to assign.
-    f = {'barrier_modulus': set_barrier_modulus,
-         'deck_modulus': set_deck_modulus,
-         'deck_density': set_deck_density,
-         'deck_thickness': set_deck_thickness,
-         'deck_height': set_deck_height,
-         'kx_ends': set_kx_ends,
-         'kx_mid': set_kx_mid,
-         'steel_modulus': set_steel_modulus,
-         'diaphragm_modulus': set_diaphragm_modulus}
-
-    # read meta xls file
-    df = pd.read_excel(XLS_FILE, sheet_name=None)
-
-    # extract desired parameter settings from 'parameters' tab
-    paras = df['parameters'][ df['parameters'].include == 1 ]
-
-    return f, df, paras
-
 
 
 
