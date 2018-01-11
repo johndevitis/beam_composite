@@ -47,6 +47,9 @@ def set_kx_mid(uid,value):
     df = meta['node_stiffness']
     # filter nodal indices based on 'near' and 'far' node names
     df = df[ df['name']=='mid' ]
+    for _, row in df.iterrows():
+        st7macros.set_node_stiffness(uid, node=row['id'], fcase=row['fcase'],
+            value=[value,0,0,0,0,0])
 
 
 def set_steel_modulus(uid,value):

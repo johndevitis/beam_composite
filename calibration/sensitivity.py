@@ -18,7 +18,7 @@ def main(arg):
     main processing function.
     """
 
-    uid, fcn, value = arg
+    uid, apply_fcn, value = arg
 
     print('worker (id: {}) started at {}'.format(uid, time.time()))
 
@@ -32,7 +32,7 @@ def main(arg):
     model.open()
 
     # use dynamic setter function to set corresponding value in model
-    fcn(uid,value)
+    apply_fcn(uid,value)
 
     # create nfa result and result log ifle names based on uid number
     nfa_file, nfa_log = st7macros.gen_result_name(model.filename, uid, '.NFA', '.NFL')
@@ -49,8 +49,8 @@ def main(arg):
     nfa.run(disp=True)
 
     # get results
-    results = nfa.getFrequencies()
-
+    freqs = nfa.getFrequencies()
+    #shapes = nfa.getModeshapes()
     model.close()
 
     st7py.stop()
