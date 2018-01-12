@@ -1,10 +1,10 @@
-import os
 import ctypes
 import numpy as np
 import pandas as pd
-from st7py import *
+
 from settings import *
-import st7macros
+import st7py as st7
+
 
 
 # load meta data from excel file as a pandas dataframe
@@ -38,7 +38,7 @@ def set_kx_ends(uid,value):
     df = df[ (df['name']=='near') | (df['name']=='far') ]
     # apply longitudinal spring value to each node
     for _, row in df.iterrows():
-        st7macros.set_node_stiffness(uid, node=row['id'], fcase=row['fcase'],
+        st7.macros.set_node_stiffness(uid, node=row['id'], fcase=row['fcase'],
             value=[value,0,0,0,0,0])
 
 
@@ -48,7 +48,7 @@ def set_kx_mid(uid,value):
     # filter nodal indices based on 'near' and 'far' node names
     df = df[ df['name']=='mid' ]
     for _, row in df.iterrows():
-        st7macros.set_node_stiffness(uid, node=row['id'], fcase=row['fcase'],
+        st7.macros.set_node_stiffness(uid, node=row['id'], fcase=row['fcase'],
             value=[value,0,0,0,0,0])
 
 
